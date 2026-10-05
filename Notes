@@ -1,1 +1,115 @@
+1)Java=========>
+yum install java-21-amazon-corretto -y
+2)Jenkins.io Repo======>
+sudo wget -O /etc/yum.repos.d/jenkins.repo \
+https://pkg.jenkins.io/rpm-stable/jenkins.repo
+3)Install jenkins===>
+yum install jenkins -y
+default workspace path for Jenkins ==> /var/lib/Jenkins/
+4)Start Jenkins ======>
+a)systemctl start jenkins
+b)systemctl status jenkins
+c)Click "q" to quit
+d)systemctl enable jenkins
+installation done
+yum install java-21-amazon-corretto -y
+sudo wget -O /etc/yum.repos.d/jenkins.repo \
+https://pkg.jenkins.io/rpm-stable/jenkins.repo
+yum install jenkins -y
+systemctl start jenkins
+systemctl status jenkins
+systemctl enable Jenkins
 
+5) JENKINS UI
+a)copy public ipv4 ip address and open on browser (http:ipv4xxxxxxxxx:8080)
+b)copy path and paste it on Linux(cat <path>) to get token - and paste the token on Jenkins dashboard - install suggested plugins
+c)Create Admin account dummy email/password accepts save and continue/finish/Next - Start jenkins
+6) Create a new JOB
+install git in Jenkins server >give repo url(https) -> select sourcecodemanagement (git)>
+a) for Public repo we don't need credentials
+create Personal access token on github
+b) for Private repo we need credentials > give GitHub username and PAT token on credentials.
+7) Automatic triggers for new builds
+a)pipeline -> configure > triggers > git hooks Pollscm select
+b)Goto GitHub repository setting > then select webhooks > add webhooks > url of Jenkins server(exactly same format only --> "http:ipv4:8080/github-webhook/") and select application/json option>save
+8)Job scheduling - [CRON syntax- * * * * ] [EX: Sep 17 10:24AM Build==> 24 10 17 09 04] 3rd party website- crontab.guru
+a) Pipeline -> configure > triggers > select PollSCM option and save
+b) Timezone change - job - preferences - TimeZone change to Asia/Kolkata + Server timezone change command (timedatectl set-timezone Asia/Kolkata) + restart Jenkins(systemctl restart Jenkins)
+--> Minutes (1-59)
+--> Hours (24hrs format)
+-->Date (1-31)
+-->Month (1-12)
+-->Day in a week{sun=0, Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6}
+MAVEN============================================MAVEN=============================================MAVEN==============
+Project code management framework:
+maven lifecycle:
+1==>Project Generate: mvn archetype:generate
+2==>compile: mvn compile
+3==>Unit Test: mvn test
+4==>Package: mvn package
+5==>Install: mvn install
+6==>Deploy: mvn deploy
+7==>Clean: mvn clean
+Tips:
+mvn test= mvn compile + mvn test
+mvn package= mvn compile + mvn test + mvn package
+mvn install= mvn compile + mvn test + mvn package + mvn install
+mvn clean install = mvn clean(removes any older target folder) + mvn compile + mvn test + mvn package + mvn install
+creating Job:
+on creating JOB: Name > Freestyle for learning > create> configure> select GIT as SourceControlManagement> give https path of repository//
+Maven tool adding on Jenkins: manage Jenkins > Tools> Add Maven > Add new maven tool and save it> go Back to Jenkins > Configure > Build steps> select invoke maven___ option > select newly added tool option in dropdown > add Goal as clean install (for mvn clean install)//
+Build Now - generates Target folder in workspace
+<<<<<<<<<<<<<<<<<=====================================================Tomcat Installation=====
+Commands==================================================>>>>>>>>>>>>>>>>>>
+Tomcat App server = same configurations like Jenkins except t3 micro enough = 8080 port on SG & EBS>8gb
+Commands::
+yum install java-21-amazon-corretto -y
+wget https://dlcdn.apache.org/tomcat/tomcat-9/v9.0.121/bin/apache-tomcat-9.0.121.tar.gz
+tar -zxvf apache-tomcat-9.0.121.tar.gz
+sed -i '56 a<role rolename="manager-gui"/>' apache-tomcat-9.0.121/conf/tomcat-users.xml
+sed -i '57 a<role rolename="manager-script"/>' apache-tomcat-9.0.121/conf/tomcat-users.xml
+sed -i '58 a<user username="tomcat" password="admin@123" roles="manager-gui, manager-script"/>' apache-tomcat-9.0.121/conf/tomcat-users.xml
+sed -i '59 a</tomcat-users>' apache-tomcat-9.0.121/conf/tomcat-users.xml
+sed -i '56d' apache-tomcat-9.0.121/conf/tomcat-users.xml
+sed -i '21d' apache-tomcat-9.0.121/webapps/manager/META-INF/context.xml
+sed -i '22d' apache-tomcat-9.0.121/webapps/manager/META-INF/context.xml
+sh apache-tomcat-9.0.121/bin/startup.sh
+Dashboard::
+Access with Public Ipv4 port 8080 > manage apps> (username: tomcat pswd: admin@123)
+Integration with Jenkins
+ON Jenkins server > manage pipeline settings > plugins > install deploy (war/ear file) to container plugin > select pipeline configure > select Post build actions > Add deploy war/ear file to container > give tomcat credentials and give description and ID random text and save it > try to access the tomcat app server now on browser
+Nexus=======================================================>>>>>>>>>>>>>>>>>>>>>>>>...........
+Nexus Artifact:
+same Jenkins setup for instance(22gb EBS) > cd /opt/ > get file from nexus website > (cmd Path- root use&bin)useradd nexus > (root user opt path> change owner individually for 2 files [sonatype-work]) chown -R nexus:nexus nexus-3.96.2-01 sonatype-work> su - nexus > cd /opt/ > cd nexus 3X....X/ > cd bin/ > ./nexus start (wait 2 mins) > add 8081 port on security group and access dashboard using ip-address > admin user & get token from terminal(cat <path>) > login as admin user admin & token > set new password (admin = Pavan@123) > disable anonymous access - finish> goTo settings > repositories > select maven(hosted) for java project > name repository random name + allow redeploy option on deployment policy - save it > on file browser tab left side = newly added repo will be showed//
+Integrating nexus with Jenkins:>>
+Plugin install - Nexus Artifact Uploader > go back to Jenkins >select job -configure - Build steps - Add > nexus version select downloaded version on server + HTTP protocol + url of nexus server (only ipv4+8081) + Credentials add and select it (Add nexus server credentials) + Pom.xml on code--(GroupID + Version + ArtifactID) + repository name given on nexus + war type + no classifier optional + File (exact)= target/myweb.war > save > Build now > artifact will be saved on nexus cross check > whenever we change version on build steps and Builds the job then new version of artifacts are saved in nexus server dashboard//
+===========MASTER-SLAVE PIPELINE:=========>>>>>>
+==> Master Pipeline (Jenkins server) - install java and Jenkins - Access Jenkins dashboard - create basic freestyle pipeline - Manage Jenkins > NODES > Add Node > Name the Slave node - check as permanent agent and save > description of slave > no: of executors > path of workspace for Test Env > add label > select launch method - SSH for Linux servers(Master & Slave) > Add Ipv4 private at Host field > Add credentials - ssh with privatekey > and give Jenkins master KP pem key and create > Host Key verification strategy (Non-verify verification strategy) > goTo job on master -configure - general - Restrict where to project can run - give Label (exact same one given in nodes) -workspace will be cloned on slaves remote path.
+==> Slave Pipeline - install only Java to run and Git install to clone repo while running//
+====================================User Management(Access)============================================================
+RBAC --> Role Based Access control
+Main user login > manage jenkins> Users > create users (User1,user2) > manage Jenkins > Security > Authorization > Proj-based-matrix-Auth option > Add user > add permission to added user(These permissions are for Overall Jenkins dashboard including for all Jobs this overrides permissions to individual job given) > save and Apply > GoTo Jobs (any job)> configure > Enable proj-based security > add user > add permissions to the added user (These permissions are related to particular Job) > save and Apply//
+Access the Jenkins url in another browser login with different users and verify the access management given to that user//
+JENKINS LOGS:
+3 PLUGINS MUST (install plugins on Jenkins -- Audit Trail, Audit Log, Audit Flow) > manage Jenkins > Audit Flow logs
+Jenkins BackUP for Builds:
+Install "Thin Backup" Plugin > Manage Jenkins > system > Thin Backup configuration > BackupDirectory(to store backup files)> give path in backup directory(Jenkins user & full permission on directory) > schedule it using corn - (no:of builds on backup latest 3 builds from last 7 days logic)//
+===============================================================================================
+SONARQUBE - code quality Analysis
+++++++Installation commands+++++
+#! /bin/bash
+#Launch an instance with 9000 and t2.medium
+cd /opt/
+wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-26.9.0.129388.zip
+unzip sonarqube-26.9.0.129388.zip
+yum install java-17-amazon-corretto -y
+useradd sonar
+chown sonar:sonar sonarqube-8.9.6.50800 -R
+chmod 777 sonarqube-26.9.0.129388 -R
+su - sonar
+
+#run this on server manually
+#sh /opt/sonarqube-26.9.0.129388/bin/linux/sonar.sh start
+#echo "user=admin & password=admin"
+launch instance > install sonar(wget+unzip+java-17version)> add user (for sonar access) > change owner and permissions to unzipped sonarqube file> cd to unzipped file & bin & Linux os> start sonar (./sonar.sh start) >Plugin SonarQube scanner install on Jenkins to integrate with SonarQube > Goto managejenkins/System/ > search for SonarQube installation > add name (Name is used in Jenkins pipeline steps) + sonar Server url (http://ipv4:9000) +add secret key as password(get PAT token from sonar project security and generate) > Add CQA stage on Pipeline >steps select pipeline syntax - search for (withsonar)> shell script fpr sonar analysis can get on sonar dashboard - Run analysis on your report section - select build tool then sh script will get> paste "sh ----" on steps inside withSonarQQubeEnv( name given on jenkins integration){ <here> } > check indentation on pipeline and then save > BUILD pipeline///
+=====================================================================================
